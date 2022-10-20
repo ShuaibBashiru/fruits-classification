@@ -1,0 +1,9 @@
+django
+pandas
+mysqlclient
+django_session_timeout
+pillow
+tensorflow
+# deepface 
+# dlib
+# cmake

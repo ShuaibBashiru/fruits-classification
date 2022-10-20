@@ -1,0 +1,184 @@
+
+  <div class="container-fluid" id="uploadfile">
+    <div class="row">
+      <div class="modal fade" id="UserPassportModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="UserPassportModalLabel" aria-hkeyden="true">
+        <div class="modal-dialog ps-md-5 pe-md-5">
+            <div class="modal-content bg-dark text-white">
+              <div class="modal-body mt-0 p-3 pt-2">
+               <div class="row mt-0 p-0">
+                <div class="col-2 p-0 ps-2"><i class="bi bi-pie-chart fs-3 p-0 m-0"></i></div>
+                <div class="col-8"><p class="text-center pt-2 fs-5">Classifications</p></div>
+                <div class="col-2 pt-1 pe-0"><i class="bi bi-x fs-3 p-0 m-0 float-end" data-bs-dismiss="modal" role="button" title="Close"></i></div>
+               </div>
+              <div class="row mt-3">
+                <div class="col-md-12">
+                  <h4 class="lead">Upload an image</h4>
+                  <p class="p-1 m-0 text-muted"><small>Upload a valid fruit image for classfication</small></p>
+                </div>
+              </div>
+                  <hr class="m-1" />
+              <div class="row mt-3">
+                <div class="col text-center">
+                  <div class="m-1">
+                    <div class="passport-dp rounded-circle m-auto" style="width:220px; height:220px;">
+                     <img :src="userProfilePassport" class="rounded-circle" style="width:220px; height:220px;" alt=" ">
+                  </div>
+                  </div>
+                </div>
+                <div class="col-12 text-center">
+                  <div class="m-1 mt-1">
+                    <div class="input-group">
+                        <input type="file" id="file" @change="onFileSelected" class="form-control shadow-none d-none" accept=".png, .jpg, .webp, .gif" required :disabled="validated ? disabled : false">
+                    </div>
+                    <span class="text-danger" for="" v-if="errors.filename && errors.filename != ''"><small> <i class="bi bi-x-circle-fill"></i> <span v-text="errors.filename[0]"></span> </small></span>
+                  </div>
+              </div>
+              </div>
+                <div class="row">
+                <div class="col-md-12">
+                  <div class="alert alert-info border-0 p-1 ps-2 pe-2 text-center" role="alert" v-if="alertMsg!=''">
+                    <small class="" v-text="alertMsg"></small>
+                  </div>
+                </div>
+              </div>
+              <hr />
+              <div class="row">
+                <div class="col-md-12">
+               <label for="file" class="btn btn-secondary float-start"><i class="bi bi-image"></i> Pick Image </label> 
+                <button type="button" class="btn btn-success float-end" @click="validateFile" :disabled="disabled"> <i class="bi bi-save"></i> <span v-text="button"></span> </button>
+              </div>
+              </div>
+              </div>
+               
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+    <script type="module">
+      import { createApp } from '/../static/assets/js/vue.js'
+      createApp({
+      el: '#uploadfile',
+      data(){
+        return{
+        pageName: 'New Enrol',
+        alertTitle: '',
+        alertMsg: '',
+        showOverlay: false,
+        notification: '',
+        info: this.server_record,
+        startNumber: 0,
+        endNumber: 10,
+        maximumRow: 10,
+        rowSelected: '',
+        totalRecord: [],
+        progress: null,
+        button: 'Save',
+        btntxt: 'Save',
+        record:false,
+        responseStatus: '',
+        usersession: [],
+        category_list: [],
+        progress: '0%',
+        selectedFile: '',
+        disabled: true,
+        validated: false,
+        errors: [],
+        form_success: [],
+        userProfilePassport: '/media/avatar.png',
+        parameters:{
+            categoryId: 1,
+            filename: '',
+            id: 1,
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            personal_id: '',
+        },
+      }
+    },
+
+    created(){
+     
+      },
+      
+      methods:{
+        onFileSelected: function(event){
+          try {
+            this.errors = '';
+            this.alertMsg = '';
+            this.selectedFile = event.target.files[0];
+            this.userProfilePassport = URL.createObjectURL(event.target.files[0]);
+            this.disabled = this.userProfilePassport==''? true:false
+          } catch (error) {
+            this.selectedFile = '';
+            this.disabled = this.userProfilePassport==''? true:false
+            return false
+          }
+        },
+
+        validateFile: function(){
+          if(this.selectedFile==''){
+            this.alertMsg='Please select a valid file'
+          }else{
+            this.sendForm()
+          }
+        },
+
+    sendForm: function(){
+        if (this.imageFile == '') {
+            this.alertMsg = 'No image file selected.'
+            return false;
+        }else{
+        this.button='Please wait...';
+        this.showOverlay=true;
+        this.alertMsg = '';
+        const form = new FormData();
+        for (var key in this.parameters){
+        form.append(key, this.parameters[key])
+        }
+        form.append('filename', this.selectedFile, this.selectedFile.name)
+        axios.post('/admin/file-upload', form,  {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(response => {
+            this.button=this.btntxt;
+            this.showOverlay=false;
+            this.errors = '';
+            if((response.status != undefined && response.status==200) && (response.data.status==response.data.statusmsg)){
+            this.disabled = true;
+            this.alertMsg=response.data.msg;
+            setTimeout(function(){
+              location.reload();
+            }, 3000)
+            }else if(response.data.status=='failed'){
+            this.alertMsg=response.data.msg;
+            }else{
+            this.alertMsg=response.data.msg;
+            }
+
+        }).catch(error => {
+                this.button=this.btntxt;
+                this.showOverlay=false;
+                this.errors = '';
+            if(error.response != undefined && error.response.status==422){
+                this.errors = error.response.data.errors;
+                this.alertMsg='Something went wrong! Kindly confirm and correct the error(s) before you continue.';
+            } else if(error.response != undefined && error.response.status==419){
+                this.alertMsg='This page has been inactive for long, Kindly refresh and try again.';
+            }else if(error.response != undefined && error.response.status==500){
+                this.alertMsg='Internal server error! Please refresh and try again or report this error.';
+            }else{
+                this.alertMsg='Access restricted or Network error! Please refresh and try again or report this error.';
+            }
+        })
+    }
+    },
+
+      },
+      // End of methods
+      
+    }).mount('#uploadfile')
+  </script>
+
+
+
